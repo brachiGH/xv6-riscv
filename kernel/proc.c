@@ -4,6 +4,7 @@
 #include "riscv.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "sysinfo.h"
 #include "defs.h"
 
 struct cpu cpus[NCPU];
@@ -124,6 +125,10 @@ allocproc(void)
 found:
   p->pid = allocpid();
   p->state = USED;
+  p->TRACE_MASK = 0;  // intialize trace mask to zero
+
+  // updated running process cunter in sysinfo
+  current_sysinfo()->nproc++; 
 
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
@@ -169,6 +174,9 @@ freeproc(struct proc *p)
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
+
+  // updated running process cunter in sysinfo
+  current_sysinfo()->nproc--; 
 }
 
 // Create a user page table for a given process, with no user memory,

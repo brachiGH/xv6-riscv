@@ -7,6 +7,7 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "riscv.h"
+#include "sysinfo.h"
 #include "defs.h"
 
 void freerange(void *pa_start, void *pa_end);
@@ -27,6 +28,7 @@ void
 kinit()
 {
   initlock(&kmem.lock, "kmem");
+  init_sysinfo();
   freerange(end, (void*)PHYSTOP);
 }
 
@@ -54,6 +56,9 @@ kfree(void *pa)
   // Fill with junk to catch dangling refs.
   memset(pa, 1, PGSIZE);
 
+  // update freed memory in sysinfo
+  current_sysinfo()->freemem += PGSIZE;
+
   r = (struct run*)pa;
 
   acquire(&kmem.lock);
@@ -78,5 +83,8 @@ kalloc(void)
 
   if(r)
     memset((char*)r, 5, PGSIZE); // fill with junk
+
+  // update freed memory in sysinfo
+  current_sysinfo()->freemem -= PGSIZE;
   return (void*)r;
 }
